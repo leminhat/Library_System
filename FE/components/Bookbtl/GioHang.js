@@ -78,7 +78,7 @@ else{
                  
                  
                   <Link to={"/editbook/" + e.book_id} className="btn btn-sm btn-primary">
-                  View
+                  Mua Tiep
                  </Link>
                 
                

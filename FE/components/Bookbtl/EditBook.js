@@ -2,11 +2,12 @@ import React, { useEffect } from "react";
 import { useState } from "react";
 import axios from "axios";
 
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import bookService from "./book.service";
 import GioHang from "./GioHang";
 
 const EditBook = () => {
+    const data = useParams();
     const [book, setBook] = useState({
         tieude: "",
         tacgia: "",
@@ -21,14 +22,24 @@ const EditBook = () => {
 
 
     const [commentList, setCommentList] = useState([]);
+    const [count,setCount] = useState([])
     const [avg,setAvg] = useState([])
+    const [danhgia,setDanhGia] =useState({
+        book_id:"",
+        login_tk:"",
+        star:""
+    })
+    // danhgia.book_id = data.id;
+    // danhgia.login_tk = localStorage.getItem("accessToken")
+
+
     const [comment, setComment] = useState({
         book_id: "",
         login_tk: "",
         cmt: "",
-        star: ""
+        
     })
-    comment.book_id = book.id;
+    comment.book_id = data.id;
     comment.login_tk = localStorage.getItem("accessToken")
 
     const [giohang, setGioHang] = useState({
@@ -37,9 +48,9 @@ const EditBook = () => {
         tieude: "",
         tacgia: "",
         linkimg: "",
-        soluong: ""
+        soluong: 1
     })
-    giohang.book_id = book.id;
+    giohang.book_id = data.id;
     giohang.login_tk = localStorage.getItem("accessToken");
     giohang.tieude = book.tieude;
     giohang.tacgia = book.tacgia;
@@ -48,7 +59,7 @@ const EditBook = () => {
 
 
 
-    const data = useParams();
+    
     const navigate = useNavigate()
 
 
@@ -70,7 +81,7 @@ const EditBook = () => {
                     console.log(err)
                 }));
             
-            axios.get("http://localhost:8080/avg")
+            axios.get(`http://localhost:8080/avg2/${data.id}`)
                 .then((res) => {
                     // console.log("avg",res.data)
                     setAvg(res.data)
@@ -79,10 +90,29 @@ const EditBook = () => {
                     console.log(err)
                 }));
             
+                
+            axios.get(`http://localhost:8080/star/${data.id}/${localStorage.getItem("accessToken")}`)
+                .then((res) => {
+                    
+                    setDanhGia(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+
+            axios.get(`http://localhost:8080/count/${data.id}`)
+                .then((res) => {
+                    // console.log("avg",res.data)
+                    setCount(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+            
 
         }
 
-    }, [commentList])
+    }, [])
 
     const handleDelete = (id) => {
          if (
@@ -94,20 +124,28 @@ const EditBook = () => {
       .then((res) => {
         alert("Delete Sucessfully");
         
+        axios.get("http://localhost:8080/comment/" + data.id)
+        .then((res) => {
+            setCommentList(res.data)
+        })
+        .catch((err => {
+            console.log(err)
+        }));
+
       })
       .catch((error) => {
         console.log(error);
       });
 
-    axios.get("http://localhost:8080/comment/" + data.id)
-      .then((res) => {
-          setCommentList(res.data)
-      })
-      .catch((err => {
-          console.log(err)
-      }));
+    
   }};
     
+  const handleChangeDG = (e) => {
+    const value = e.target.value;
+    // danhgia.book_id = data.id;
+    // danhgia.login_tk = localStorage.getItem("accessToken")
+    setDanhGia({ ...danhgia, [e.target.name]: value });
+};
 
     const handleChangeCmt = (e) => {
         const value = e.target.value;
@@ -126,8 +164,10 @@ const EditBook = () => {
     };
 
     const handleChangeImg = (e) => {
-        const file = e.target.files[0];
-        setBook({ ...book, [e.target.name]: file.name });
+        if (e.target.value) {
+            const file = e.target.files[0];
+            setBook({ ...book, [e.target.name]: file.name });
+        }
     };
 
     const addCmt = (e) => {
@@ -135,7 +175,48 @@ const EditBook = () => {
         axios.post("http://localhost:8080/addcmt", comment)
             .then((res) => {
                 alert("Da Nhan Xet Thanh Cong")
-                // navigate("/")
+
+            axios.get("http://localhost:8080/comment/" + data.id)
+                .then((res) => {
+                    setCommentList(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+            })
+            .catch((error) => {
+                console.log(error)
+            });
+    }
+
+    const addDG = (e) =>{
+        e.preventDefault();
+        console.log("da danh gia")
+        danhgia.book_id = data.id
+        danhgia.login_tk = localStorage.getItem("accessToken")
+        console.log("danh gia",danhgia)
+        axios.post("http://localhost:8080/adddanhgia", danhgia)
+            .then((res) => {
+                alert("Da Danh Gia Thanh Cong")
+                
+                axios.get(`http://localhost:8080/avg2/${data.id}`)
+                .then((res) => {
+                    // console.log("avg",res.data)
+                    setAvg(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+
+                axios.get(`http://localhost:8080/count/${data.id}`)
+                .then((res) => {
+                    // console.log("avg",res.data)
+                    setCount(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+
             })
             .catch((error) => {
                 console.log(error)
@@ -172,7 +253,8 @@ const EditBook = () => {
         inputs.forEach((input) => input.removeAttribute("disabled"));
         btnSave.classList.remove("hidden");
     };
-
+    
+    
 
     const editBook = (e) => {
 
@@ -221,7 +303,7 @@ const EditBook = () => {
                 });}
         }
     }
-    console.log(commentList)
+    // console.log(commentList)
 
 
 
@@ -479,7 +561,10 @@ const EditBook = () => {
                         <input
                             className="form-control"
                             type="number"
-                           
+                            min={1}
+                            max={1000}
+                            step={1}
+                            value={giohang.soluong}
                             name="soluong"
                             id="soluong"
                             onChange={(e) => handleChangeGioHang(e)}
@@ -492,10 +577,38 @@ const EditBook = () => {
                 </div>
             </form>)}
 
+             {localStorage.getItem("accessToken") &&(   
+            <form id="formAddDG" onSubmit={(e) => addDG(e)}>
+            <div className="mb-3 row d-flex">
+                <label htmlFor="cmt" className="col-sm-2 w-25 col-form-label">
+                        Danh Gia <br />
+                    </label>
+
+                    <div className="col-sm-4 w-75 muahang d-flex justify-content-center align-items-center">
+                        <input
+                            className="form-control"
+                            type="number"
+                            min={1}
+                            max={5}
+                            step={1}
+                            name="star"
+                            id="star"
+                            value={danhgia.star}
+                            onChange={(e) => handleChangeDG(e)}
+                        />
+                        <button type="submit button" className="btn btn-primary">Danh Gia</button>  
+                        <span className="avgstar">({avg}/5)</span> 
+                        <Link to={"/danhgia/" + data.id} className="avgstar">(Da co {count} danh gia)</Link> 
+                        
+                     </div>
+                     
+                </div>
+            </form>)}
+
             {localStorage.getItem("accessToken") &&(
             <form id="formAddCmt" onSubmit={(e) => addCmt(e)}>
 
-                <div className="mb-3 row">
+                {/* <div className="mb-3 row">
                 <label htmlFor="cmt" className="col-sm-2 col-form-label">
                         Danh Gia <br />
                     </label>
@@ -515,7 +628,7 @@ const EditBook = () => {
                         <h1 className="avgstar">({avg}/5)</h1> 
                      </div>
                      
-                </div>
+                </div> */}
                 
                 <div className="mb-3 row">
 

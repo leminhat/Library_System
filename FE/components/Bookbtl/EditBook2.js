@@ -4,8 +4,10 @@ import axios from "axios";
 
 import { useNavigate, useParams } from "react-router-dom";
 import bookService from "./book.service";
+import GioHang from "./GioHang";
 
-const EditBook2 = () => {
+const EditBook = () => {
+    const data = useParams();
     const [book, setBook] = useState({
         tieude: "",
         tacgia: "",
@@ -20,13 +22,23 @@ const EditBook2 = () => {
 
 
     const [commentList, setCommentList] = useState([]);
+    const [avg,setAvg] = useState([])
+    const [danhgia,setDanhGia] =useState({
+        book_id:"",
+        login_tk:"",
+        star:""
+    })
+    danhgia.book_id = data.id;
+    danhgia.login_tk = localStorage.getItem("accessToken")
+
+
     const [comment, setComment] = useState({
         book_id: "",
         login_tk: "",
         cmt: "",
         star: ""
     })
-    comment.book_id = book.id;
+    comment.book_id = data.id;
     comment.login_tk = localStorage.getItem("accessToken")
 
     const [giohang, setGioHang] = useState({
@@ -37,7 +49,7 @@ const EditBook2 = () => {
         linkimg: "",
         soluong: ""
     })
-    giohang.book_id = book.id;
+    giohang.book_id = data.id;
     giohang.login_tk = localStorage.getItem("accessToken");
     giohang.tieude = book.tieude;
     giohang.tacgia = book.tacgia;
@@ -46,7 +58,7 @@ const EditBook2 = () => {
 
 
 
-    const data = useParams();
+    
     const navigate = useNavigate()
 
 
@@ -67,10 +79,60 @@ const EditBook2 = () => {
                 .catch((err => {
                     console.log(err)
                 }));
+            
+            axios.get("http://localhost:8080/avg2")
+                .then((res) => {
+                    // console.log("avg",res.data)
+                    setAvg(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+                
+            axios.get(`http://localhost:8080/star/${data.id}/${danhgia.login_tk}`)
+                .then((res) => {
+                    
+                    setDanhGia(res.data)
+                })
+                .catch((err => {
+                    console.log(err)
+                }));
+            
 
         }
 
     }, [])
+
+    const handleDelete = (id) => {
+         if (
+      window.confirm("Ban co muon xoa binh luan") ===
+      true
+    ) {
+    
+    axios.get("http://localhost:8080/deletecmt/"+id)
+      .then((res) => {
+        alert("Delete Sucessfully");
+        
+        axios.get("http://localhost:8080/comment/" + data.id)
+        .then((res) => {
+            setCommentList(res.data)
+        })
+        .catch((err => {
+            console.log(err)
+        }));
+
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    
+  }};
+    
+  const handleChangeDG = (e) => {
+    const value = e.target.value;
+    setDanhGia({ ...danhgia, [e.target.name]: value });
+};
 
     const handleChangeCmt = (e) => {
         const value = e.target.value;
@@ -79,7 +141,7 @@ const EditBook2 = () => {
 
     const handleChangeGioHang = (e) => {
         const value = e.target.value;
-        setGioHang({ ...book, [e.target.name]: value });
+        setGioHang({ ...giohang, [e.target.name]: value });
     };
 
 
@@ -98,15 +160,28 @@ const EditBook2 = () => {
         axios.post("http://localhost:8080/addcmt", comment)
             .then((res) => {
                 alert("Da Nhan Xet Thanh Cong")
-                navigate("/")
+                // navigate("/")
             })
             .catch((error) => {
                 console.log(error)
             });
     }
 
+    const addDG = (e) =>{
+        
+    }
+
     const addGioHang = (e) => {
         e.preventDefault();
+        
+        axios.post("http://localhost:8080/addgiohang2", giohang)
+            .then((res) => {
+               
+            })
+            .catch((error) => {
+                console.log(error)
+            });
+
         axios.post("http://localhost:8080/addgiohang", giohang)
             .then((res) => {
                 alert("Da them vao gio hang Thanh Cong")
@@ -126,12 +201,17 @@ const EditBook2 = () => {
         inputs.forEach((input) => input.removeAttribute("disabled"));
         btnSave.classList.remove("hidden");
     };
-
+    
+    
 
     const editBook = (e) => {
-        console.log("da vao")
+
         e.preventDefault();
         if (data.id != 0) {
+            if (
+                window.confirm("Ban co muon cap nhat quyen sach nay khong") ===
+                true
+              ) {
             bookService.updateBook(data.id, book)
 
                 .then((res) => {
@@ -140,8 +220,12 @@ const EditBook2 = () => {
                 })
                 .catch((error) => {
                     console.log(error)
-                })
+                })}
         } else {
+            if (
+                window.confirm("Ban co muon them quyen sach nay khong") ===
+                true
+              ) {
             bookService
                 .saveBook(book)
                 .then((res) => {
@@ -164,19 +248,19 @@ const EditBook2 = () => {
                 })
                 .catch((error) => {
                     console.log(error);
-                });
+                });}
         }
     }
     console.log(commentList)
-    localStorage.setItem("accessTokenad", true)
+
 
 
     return (
         <div>
 
-        <form id="formAction" className="mx-8" onSubmit={editBook}>
+            <form id="formAction" className="mx-8" onSubmit={editBook}>
 
-            {localStorage.getItem("accessTokenad") && (
+
 
                 <div className="space-y-12 w-full h-full bg-white rounded-lg mt-8">
 
@@ -371,7 +455,7 @@ const EditBook2 = () => {
                         </div>
 
                         <div className="mt-6 flex items-center justify-end gap-x-6 mr-24">
-                            {localStorage.getItem("accessTokenad")  && (
+                            {localStorage.getItem("accessTokenad") && (
                                 (
                                     <button
                                         type="button"
@@ -405,48 +489,144 @@ const EditBook2 = () => {
                                         Add
                                     </button>
                                 )
-                            ) 
-                            }                               
+                            )
+                            }
                         </div>
                     </div>
                 </div>
-            )}            
-        </form>
-        
-        <form onSubmit={(e) => addGioHang(e)}>
-        
-                So Luong:<input  type="number"
-                        name="soluong"
-                        id="soluong"
-                        onChange={(e) => handleChangeGioHang(e)}
-               />
-               <button
-                    className="btn btn-info"
-                    type="submit"
 
-                >
-                 Mua Hang
-                </button>
-               
             </form>
-            <form onSubmit={(e) => addCmt(e)}>
-                Viet Nhan Xet:<input  type="text"
-                        name="cmt"
-                        id="cmt"
-                        onChange={(e) => handleChangeCmt(e)}
-               />
-               <button
-                    className="btn btn-info"
-                    type="submit"
 
-                >
-                 Lưu
-                </button>
+            {localStorage.getItem("accessToken") &&(
+            <form id="formAddgiohang" onSubmit={(e) => addGioHang(e)}>
+
+                <div className="mb-3 row">
+                    <label htmlFor="cmt" className="col-sm-2 col-form-label">
+                        So Luong <br />
+                    </label>
+
+                    <div className="col-sm-4 muahang">
+                        <input
+                            className="form-control"
+                            type="number"
+                            value={danhgia.star}
+                            name="soluong"
+                            id="soluong"
+                            onChange={(e) => handleChangeGioHang(e)}
+                        />
+                        <button type="submit button" className="btn btn-primary">Mua Hang</button>    
+                     </div>
+
+                        
+                    
+                </div>
+            </form>)}
+
+            <form id="formAddDG" onSubmit={(e) => addDG(e)}>
+            <div className="mb-3 row">
+                <label htmlFor="cmt" className="col-sm-2 col-form-label">
+                        Danh Gia <br />
+                    </label>
+
+                    <div className="col-sm-4 muahang">
+                        <input
+                            className="form-control"
+                            type="number"
+                            min={1}
+                            max={5}
+                            step={1}
+                            name="star"
+                            id="star"
+                            value={danhgia.star}
+                            onChange={(e) => handleChangeDG(e)}
+                        />
+                        <button type="submit button" className="btn btn-primary">Danh Gia</button>  
+                        <h1 className="avgstar">({avg}/5)</h1> 
+                     </div>
+                     
+                </div>
             </form>
-            { commentList.length >0 && commentList.map((e, num) => (<h1>{e.login_tk}:  {e.cmt}</h1>))}
-    </div>
+
+            {localStorage.getItem("accessToken") &&(
+            <form id="formAddCmt" onSubmit={(e) => addCmt(e)}>
+
+                {/* <div className="mb-3 row">
+                <label htmlFor="cmt" className="col-sm-2 col-form-label">
+                        Danh Gia <br />
+                    </label>
+
+                    <div className="col-sm-4 muahang">
+                        <input
+                            className="form-control"
+                            type="number"
+                            min={1}
+                            max={5}
+                            step={1}
+                            name="star"
+                            id="star"
+                            onChange={(e) => handleChangeCmt(e)}
+                        />
+                        <button type="submit button" className="btn btn-primary">Danh Gia</button>  
+                        <h1 className="avgstar">({avg}/5)</h1> 
+                     </div>
+                     
+                </div> */}
+                
+                <div className="mb-3 row">
+
+                    <label htmlFor="cmt" className="col-sm-2 col-form-label">
+                        Comment <br />
+                    </label>
+
+                    <div className="col-sm-10">
+                        <input
+                            className="form-control"
+                            name="cmt"
+                            id="cmt"
+                            onChange={(e) => handleChangeCmt(e)}
+                        />
+                    </div>
+                </div>
+
+                <button type="submit button" className="btn btn-primary">Add Comment</button>
+            </form>
+            )}
+
+            
+            {commentList.map((cmt) => (
+                <div key={cmt.id}>
+                    <div className="container my-1 py-1 text-dark" >
+                        <div className="row d-flex justify-content-center">
+                            <div className="col-md-8 col-lg-5 col-xl-5">
+                                <div className="card mb-3">
+                                    <div className="card-body">
+                                        <div className="d-flex flex-start">
+                                            <img className="rounded-circle shadow-1-strong me-3"
+                                                src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/img%20(26).webp" alt="avatar" width="40"
+                                                height="40" />
+                                            <div className="w-100">
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <h6 className="text-primary fw-bold mb-0">
+                                                        {cmt.login_tk}
+                                                        <span className="text-dark ms-2">{cmt.cmt}</span>
+                                                    </h6>
+                                                    {(localStorage.getItem("accessToken") == cmt.login_tk) && (
+                                                    <button data-id={cmt.id} onClick={() => handleDelete(cmt.id) } className="btn btn-danger">Delete</button>
+                                                    )}  
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+            
+        </div> 
     );
 };
 
 
-export default EditBook2;
+export default EditBook;
